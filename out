@@ -1,0 +1,14 @@
+Using network 'development'.
+
+{ tx: '0x032c6dbb501462de5533d5c37342732de32a3e6f1f553835a5e396462079e894',
+  receipt: 
+   { transactionHash: '0x032c6dbb501462de5533d5c37342732de32a3e6f1f553835a5e396462079e894',
+     transactionIndex: 0,
+     blockHash: '0x959a564176dd67d4d3f5c72ae30e96804ff12179010ca223e2623b5ff84cabb7',
+     blockNumber: 35,
+     gasUsed: 29464,
+     cumulativeGasUsed: 29464,
+     contractAddress: null,
+     logs: [],
+     status: 1 },
+  logs: [] }
