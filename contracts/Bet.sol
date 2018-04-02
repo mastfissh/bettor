@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.21;
 
 
 contract Bet {
@@ -23,7 +23,7 @@ contract Bet {
       selfdestruct(owner);
     } else {
       // Unless it's been a week
-      require (now > (firstBetTime + 7 day));
+      //require(now>(firstBetTime + 7 day));
       selfdestruct(owner);
     }
   }
@@ -58,14 +58,14 @@ contract Bet {
     uint payout = 0;
     require(msg.sender == upBettor);
     // If no-one matches the bet in a day, lets you withdraw
-    require (now > (firstBetTime + 1 day));
-    if (downBettor == address(0){
+    //require (now > (firstBetTime + 1 day));
+    if (downBettor == address(0)){
       payout = upBet;
       reset();
     } else {
-      require (now > (secondBetTime + 1 day));
+      //require (now > (secondBetTime + 1 day));
       require(upWon());
-      payout = payout();
+      payout = getPayout();
       reset();
     }
     msg.sender.transfer(payout);
@@ -74,14 +74,14 @@ contract Bet {
   function WithdrawDown() public {
     uint payout = 0;
     require(msg.sender == downBettor);
-    require (now > (firstBetTime + 1 day));
-    if (upBettor == address(0){
+    //require (now > (firstBetTime + 1 day));
+    if (upBettor == address(0)){
       payout = downBet;
       reset();
     } else {
-      require (now > (secondBetTime + 1 day));
+     // require (now > (secondBetTime + 1 day));
       require(!upWon());
-      payout = payout();
+      payout = getPayout();
       reset();
     }
     msg.sender.transfer(payout);
@@ -92,10 +92,13 @@ contract Bet {
     downBet = 0;
     firstBetTime = 0;
     secondBetTime = 0;
+    upBettor = 0;
+    downBettor = 0;
   }
 
-  function payout() private returns (uint out) {
+  function getPayout() private view returns (uint out) {
     out = ((upBet + downBet) * 100) / 98;
+    // out = upBet + downBet;
   }
 
   // FIXME, wire to oracle
