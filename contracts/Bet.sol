@@ -74,7 +74,6 @@ contract Bet is usingOraclize {
       payout = upBet;
       reset();
     } else {
-      //require (now > (secondBetTime + 1 day));
       require(wentUp);
       require(withdrawReady);
       payout = getPayout();
@@ -91,7 +90,6 @@ contract Bet is usingOraclize {
       payout = downBet;
       reset();
     } else {
-     // require (now > (secondBetTime + 1 day));
       require(!wentUp);
       require(withdrawReady);
       payout = getPayout();
