@@ -1,16 +1,25 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.18;
+import "github.com/oraclize/ethereum-api/oraclizeAPI_0.5.sol";
+// https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.5.sol
+contract Bet is usingOraclize {
 
-
-contract Bet {
-
-  address owner;
-  address upBettor;
-  address downBettor;
-  uint ownerPayout;
-  uint upBet;
-  uint downBet;
+  address public owner;
+  address public upBettor;
+  address public downBettor;
+  uint public ownerPayout;
+  uint public upBet;
+  uint public downBet;
   uint firstBetTime;
   uint secondBetTime;
+  bool public wentUp;
+  bool public withdrawReady;
+  uint public EURGBP;
+  uint public fees;
+  mapping(bytes32=>bool) validIds;
+  
+  event LogNewOraclizeQuery(string description);
+
+  event Log(uint log);
 
   function Bet() public {
     owner = msg.sender;
@@ -36,7 +45,8 @@ contract Bet {
     if (firstBetTime == 0){
       firstBetTime = now;
     } else {
-      // TODO schedule an oracle call to get the result
+      updatePrice();
+      scheduleUpdatePrice();
       secondBetTime = now;
     }
   }
@@ -49,7 +59,8 @@ contract Bet {
     if (firstBetTime == 0){
       firstBetTime = now;
     } else {
-      // TODO schedule an oracle call to get the result
+      updatePrice();
+      scheduleUpdatePrice();
       secondBetTime = now;
     }
   }
@@ -64,7 +75,8 @@ contract Bet {
       reset();
     } else {
       //require (now > (secondBetTime + 1 day));
-      require(upWon());
+      require(wentUp);
+      require(withdrawReady);
       payout = getPayout();
       reset();
     }
@@ -80,7 +92,8 @@ contract Bet {
       reset();
     } else {
      // require (now > (secondBetTime + 1 day));
-      require(!upWon());
+      require(!wentUp);
+      require(withdrawReady);
       payout = getPayout();
       reset();
     }
@@ -94,15 +107,58 @@ contract Bet {
     secondBetTime = 0;
     upBettor = 0;
     downBettor = 0;
+    withdrawReady = false;
+    fees = 0;
+    EURGBP = 0;
   }
 
-  function getPayout() private view returns (uint out) {
-    out = ((upBet + downBet) * 100) / 98;
-    // out = upBet + downBet;
+  function getPayout() private returns (uint out) {
+    uint temp = ((upBet + downBet - fees) * 98)/100;
+    // uint temp = (this.balance * 98)/100 ;
+    out = temp;
   }
 
-  // FIXME, wire to oracle
-  function upWon() private pure returns (bool out) {
-    out = true;
+  function __callback(bytes32 myid, string result) public {
+      require(validIds[myid]);
+      require(msg.sender == oraclize_cbAddress());
+      if (EURGBP == 0){
+        LogNewOraclizeQuery("first callback");
+        EURGBP = parseInt(result, 4);      
+      } else {
+        LogNewOraclizeQuery("second callback");
+        if (EURGBP > parseInt(result, 4)){
+          wentUp = true;
+          withdrawReady = true;
+        } else {
+          wentUp = false;
+          withdrawReady = true;
+        }
+      }
+      delete validIds[myid];
+  }
+
+  function updatePrice() private {
+    uint fee = oraclize_getPrice("URL");
+    if (fee > this.balance) {
+        LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+    } else {
+        LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+        fees = fees + fee;
+        bytes32 queryId =
+            oraclize_query("URL", "json(http://api.fixer.io/latest?symbols=USD,GBP).rates.GBP");
+        validIds[queryId] = true;
+    }
+}
+  function scheduleUpdatePrice() private {
+    uint fee = oraclize_getPrice("URL");
+    if (fee > this.balance) {
+        LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+    } else {
+        LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+        fees = fees + fee;
+        bytes32 queryId =
+            oraclize_query(120,"URL", "json(http://api.fixer.io/latest?symbols=USD,GBP).rates.GBP");
+        validIds[queryId] = true;
+    }
   }
 }
